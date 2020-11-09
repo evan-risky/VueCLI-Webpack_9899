@@ -11,14 +11,27 @@
          single-line
          hide-details
        ></v-text-field>
+
        <v-spacer></v-spacer>
+       <div>
+         <v-select
+          v-model="searchPriotity"
+          label="Priority"
+          :items="['All Priority','Penting', 'Biasa', 'Tidak penting']"
+          dense
+          outlined
+          ></v-select>
+        </div>
+       <v-spacer></v-spacer>
+       
        <v-btn color="success" dark @click="dialog = true">
          Tambah
        </v-btn>
+
      </v-card-title>
-     <v-data-table :headers="headers" :items="todos" :search="search">
+     <v-data-table :headers="headers" :items="filteredItems" :search="search">
        <template v-slot:[`item.actions`]="{ item }">
-         <v-btn small class="mr-2" @click="dialog = true">
+         <v-btn small class="mr-2" @click="editItem(item)">
            edit
          </v-btn>
          <v-btn small @click="deleteItem(item)">
@@ -31,7 +44,12 @@
    <v-dialog v-model="dialog" persistent max-width="600px">
      <v-card>
        <v-card-title>
-         <span class="headline">Form Todo</span>
+         <span class="headline" v-if="add == true">
+           Form Add
+          </span>
+          <span class="headline" v-else>
+           Form Edit
+          </span>
        </v-card-title>
        <v-card-text>
          <v-container>
@@ -39,6 +57,7 @@
              v-model="formTodo.task"
              label="Task"
              required
+             autofocus
            ></v-text-field>
 
            <v-select
@@ -60,7 +79,12 @@
          <v-btn color="blue darken-1" text @click="cancel">
            Cancel
          </v-btn>
-         <v-btn color="blue darken-1" text @click="save">
+
+         <v-btn v-if="add == true" color="blue darken-1" text @click="save">
+            Save
+         </v-btn>
+
+         <v-btn v-else color="blue darken-1" text @click="edit(formTodo)">
            Save
          </v-btn>
        </v-card-actions>
@@ -74,10 +98,10 @@
        </v-card-title>
        <v-card-actions>
          <v-spacer></v-spacer>
-         <v-btn color="blue darken-1" text @click="cancel1">
+         <v-btn color="blue darken-1" text @click="cancel">
            Cancel
          </v-btn>
-         <v-btn color="blue darken-1" text @click="deleteItem">
+         <v-btn color="blue darken-1" text @click="deleteNow">
            Delete
          </v-btn>
        </v-card-actions>
@@ -93,7 +117,17 @@ export default {
  data() {
    return {
      search: null,
+     searchPriotity: "All Priority",
+     add: true,
+     edititem:null,
      dialog: false,
+     dialog1: false,
+
+     filters: {
+        search: '',
+        priority: '',
+      },
+
      headers: [
        {
          text: "Task",
@@ -101,9 +135,10 @@ export default {
          sortable: true,
          value: "task",
        },
-       { text: "Priority", value: "priority" },
-       { text: "Note", value: "note" },
+       { text: "Priority",field: "priority", value: "priority" },
+       { text: "Note",  field: "note",value: "note" },
        { text: "Actions", value: "actions" },
+
      ],
      todos: [
        {
@@ -132,19 +167,17 @@ export default {
  methods: {
    save() {
      this.todos.push(this.formTodo);
-     this.resetForm();
-     this.dialog = false;
+     this.cancel();
    },
    deleteItem() {
-     this.todos.get(this.formTodo);
-     this.dialog1 = false;
+     this.dialog1 = true;
+     this.edititem = item;
    },
    cancel() {
      this.resetForm();
      this.dialog = false;
-   },
-   cancel1() {
-     this.resetForm();
+     this.edititem = null;
+     this.add = true;
      this.dialog1 = false;
    },
    resetForm() {
@@ -154,6 +187,38 @@ export default {
        note: null,
      };
    },
+   deleteNow(){
+     this.todos.splice(this.todos.indexOf(this.edititem), 1);
+     this.dialog1 = false;
+   },
+   editItem(item) {
+     this.add = false;
+     this.formTodo = {
+        task: item.task,
+        priority: item.priority,
+        note: item.note,
+      };
+     this.dialog = true;
+     this.edititem = item;
+    },
+
+    edit(formTodo) {
+     this.edititem.task = formTodo.task;
+     this.edititem.priority = formTodo.priority;
+     this.edititem.note = formTodo.note;
+     this.cancel();
+    },
  },
+ computed: {
+    filteredItems() {
+      return this.todos.filter((i) => {
+        if(this.searchPriotity !== "All Priority") {
+          return !this.searchPriotity || (i.priority === this.searchPriotity);
+        } else {
+          return this.todos;
+        }
+      })
+    }
+  }
 };
 </script>
